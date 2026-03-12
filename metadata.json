@@ -1,0 +1,7 @@
+{
+  "name": "Remix: INTEGRA CONSTRUCTION | PGU Turkestan Dashboard",
+  "description": "A comprehensive modular management dashboard for the INTEGRA CONSTRUCTION project in Turkestan, featuring resource tracking, schedule control, risk analysis, and role-based access.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
