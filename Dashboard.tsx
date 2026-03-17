@@ -1,23 +1,35 @@
 
-import React, { useState, useEffect } from 'react';
-import { User, UserRole, ModuleType, AuditLog, Title, HumanResource, Equipment, SupplyItem } from './types';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { User, ModuleType, AuditLog, Title, HumanResource, Equipment, SupplyItem, UserRole } from './types';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import GeneralStatus from './modules/GeneralStatus';
-import TitlesModule from './modules/TitlesModule';
-import HRResources from './modules/HRResources';
-import EquipmentModule from './modules/EquipmentModule';
-import ExecutionSummary from './modules/ExecutionSummary';
-import Subcontractors from './modules/Subcontractors';
-import AdminPanel from './modules/AdminPanel';
-import LiveModule from './modules/LiveModule';
-import SupplyRegistry from './modules/SupplyRegistry';
-import Handbook from './modules/Handbook';
-import GenStructure from './modules/GenStructure';
-import ProjectManagers from './modules/ProjectManagers';
-import WorkPlan from './modules/WorkPlan';
 import UploadModal from './components/UploadModal';
 import { INITIAL_TITLES, INITIAL_HR, INITIAL_EQUIPMENT, INITIAL_SUPPLY, DATA_VERSION, INITIAL_TITLE_ALLOCATION } from './constants';
+
+// Lazy load modules
+const GeneralStatus = lazy(() => import('./modules/GeneralStatus'));
+const TitlesModule = lazy(() => import('./modules/TitlesModule'));
+const HRResources = lazy(() => import('./modules/HRResources'));
+const EquipmentModule = lazy(() => import('./modules/EquipmentModule'));
+const ExecutionSummary = lazy(() => import('./modules/ExecutionSummary'));
+const Subcontractors = lazy(() => import('./modules/Subcontractors'));
+const AdminPanel = lazy(() => import('./modules/AdminPanel'));
+const LiveModule = lazy(() => import('./modules/LiveModule'));
+const SupplyRegistry = lazy(() => import('./modules/SupplyRegistry'));
+const Handbook = lazy(() => import('./modules/Handbook'));
+const GenStructure = lazy(() => import('./modules/GenStructure'));
+const ProjectManagers = lazy(() => import('./modules/ProjectManagers'));
+const WorkPlan = lazy(() => import('./modules/WorkPlan'));
+
+// Loading component
+const ModuleLoader = () => (
+  <div className="flex items-center justify-center h-full">
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-12 h-12 border-4 border-[#007AFF]/20 border-t-[#007AFF] rounded-full animate-spin"></div>
+      <p className="text-subhead text-[#86868B] animate-pulse">Загрузка модуля...</p>
+    </div>
+  </div>
+);
 
 interface DashboardProps {
   user: User;
@@ -98,6 +110,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, auditLogs, setAud
       setTitleAllocation(INITIAL_TITLE_ALLOCATION ?? []);
       localStorage.setItem('dataVersion', DATA_VERSION);
     }
+    
+    // Specific check for supply data to ensure it updates from file
+    const savedSupplyVersion = localStorage.getItem('supplyDataVersion');
+    if (savedSupplyVersion !== '1.1') {
+      setSupplyData(INITIAL_SUPPLY);
+      localStorage.setItem('supplyDataVersion', '1.1');
+    }
   }, []);
 
   // Persist state changes
@@ -147,17 +166,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, auditLogs, setAud
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleMenuClick = () => {
+  const handleMenuClick = React.useCallback(() => {
     if (window.innerWidth >= 1024) {
       // Desktop: Toggle collapse
-      setIsSidebarCollapsed(!isSidebarCollapsed);
+      setIsSidebarCollapsed(prev => !prev);
     } else {
       // Mobile: Toggle drawer
       setIsMobileMenuOpen(true);
     }
-  };
+  }, []);
 
-  const handleUpdateTitle = (updatedTitle: Title) => {
+  const handleUpdateTitle = React.useCallback((updatedTitle: Title) => {
     // Double check just in case
     if (isReadOnly) return;
 
@@ -172,9 +191,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, auditLogs, setAud
       action: `Редактирование титула: ${updatedTitle.number}`
     };
     setAuditLogs(prev => [newLog, ...prev]);
-  };
+  }, [isReadOnly, user.name, user.role, setAuditLogs]);
 
-  const handleUploadSuccess = (module: ModuleType, newData: any) => {
+  const handleUploadSuccess = React.useCallback((module: ModuleType, newData: any) => {
     const timestamp = new Date().toLocaleString();
     const action = `Загрузка данных в модуль: ${module}`;
     
@@ -194,7 +213,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, auditLogs, setAud
     };
     setAuditLogs(prev => [newLog, ...prev]);
     setIsUploadModalOpen(false);
-  };
+  }, [user.name, user.role, setAuditLogs]);
 
   const renderModule = () => {
     switch (activeModule) {
@@ -204,7 +223,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, auditLogs, setAud
       case 'EQUIPMENT': return <EquipmentModule data={equipmentData} />;
       case 'EXECUTION_SUMMARY': return <ExecutionSummary />;
       case 'SUBCONTRACTORS': return <Subcontractors />;
-      case 'ADMIN_PANEL': return <AdminPanel logs={auditLogs} />;
+      case 'ADMIN_PANEL': return <AdminPanel />;
       case 'LIVE': return <LiveModule />;
       case 'SUPPLY': return <SupplyRegistry data={supplyData} auditLogs={auditLogs} />;
       case 'HANDBOOK': return <Handbook />;
@@ -216,7 +235,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, auditLogs, setAud
   };
 
   return (
-    <div className="flex h-screen w-full bg-slate-50 text-slate-900 overflow-hidden relative">
+    <div className="flex h-screen w-full bg-[#F5F5F7] text-[#1D1D1F] overflow-hidden relative">
       <Sidebar 
         activeModule={activeModule} 
         setActiveModule={(m) => {
@@ -230,7 +249,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, auditLogs, setAud
         closeMobileMenu={() => setIsMobileMenuOpen(false)}
       />
       
-      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${isSidebarCollapsed ? 'lg:pl-[80px]' : 'lg:pl-[280px]'}`}>
         <Header 
           user={user} 
           onLogout={onLogout} 
@@ -238,8 +257,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, auditLogs, setAud
           onUploadClick={() => setIsUploadModalOpen(true)}
           onMenuClick={handleMenuClick}
         />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar">
-          {renderModule()}
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+          <div className="container-grid h-full">
+            <Suspense fallback={<ModuleLoader />}>
+              {renderModule()}
+            </Suspense>
+          </div>
         </main>
       </div>
 

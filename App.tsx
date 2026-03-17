@@ -54,10 +54,10 @@ const App: React.FC = () => {
       <div className="relative">
         <Login onLogin={handleLogin} />
         {loginError && (
-          <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50 shadow-lg">
-            <span className="block sm:inline">{loginError}</span>
-            <button className="absolute top-0 bottom-0 right-0 px-4 py-3" onClick={() => setLoginError(null)}>
-              <span className="text-xl">&times;</span>
+          <div className="fixed top-4 right-4 bg-[#FF3B30]/10 border border-[#FF3B30]/20 text-[#FF3B30] px-4 py-3 rounded-xl z-50 shadow-sm backdrop-blur-md flex items-center animate-in slide-in-from-top-2 duration-300">
+            <span className="block sm:inline text-sm font-medium">{loginError}</span>
+            <button className="ml-4 text-[#FF3B30] hover:text-[#D70015] transition-colors" onClick={() => setLoginError(null)}>
+              <span className="text-xl leading-none">&times;</span>
             </button>
           </div>
         )}
