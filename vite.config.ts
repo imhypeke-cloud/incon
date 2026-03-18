@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
       resolve: {
         alias: {
           // Fix: Replaced __dirname with path.resolve() as __dirname is not available in ESM context
-          '@': path.resolve('.'),
+          '@': path.resolve('src'),
         }
       }
     };
